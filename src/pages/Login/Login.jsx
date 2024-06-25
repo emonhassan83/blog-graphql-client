@@ -1,22 +1,44 @@
+/* eslint-disable no-unused-vars */
 import { useForm } from "react-hook-form";
 import "./Login.css";
 import { Helmet } from "react-helmet-async";
 import { Toaster} from "react-hot-toast";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { gql, useMutation } from "@apollo/client";
+
+const LOGIN = gql `
+  mutation login($email: String!, $password: String!) {
+  signIn(email: $email, password: $password) {
+    userError
+    token
+  }
+}
+`
 
 const Login = () => {
   const [show, setShow] = useState(false);
+  const { register, handleSubmit, formState: { errors } } = useForm();
+  const [signIn, { data, error, loading }] = useMutation(LOGIN);
+  const [userError, setUserError] = useState(null);
+  // console.log(data);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm();
 
   const onSubmit = (data) => {
-    console.log(data);
+    signIn({
+      variables: data
+  })
   };
+
+  useEffect(() => {
+    if (data && data?.signIn?.token) {
+        console.log("token", data.signIn.token)
+        localStorage.setItem("token", data.signIn.token)
+    }
+    if (data && data.signIn?.userError) {
+        setUserError(data.signIn.userError)
+    }
+}, [data]);
 
   return (
     <div className="login-card mx-auto mt-[10%] shadow-lg">
@@ -45,7 +67,6 @@ const Login = () => {
           {...register("password", {
             required: true,
             minLength: 6,
-            pattern: /(?=.*[A-Z])(?=.*[!@#$&*])(?=.*[0-9])(?=.*[a-z])/,
           })}
           required
         />
@@ -58,14 +79,6 @@ const Login = () => {
         {errors.password?.type === "minLength" && (
           <p className="text-red-500 -mt-5">
             <small>Password must be 6 character</small>
-          </p>
-        )}
-        {errors.password?.type === "pattern" && (
-          <p className="text-red-500 -mt-5 ">
-            <small>
-              Password must have one Uppercase one lower case, one number and
-              one special character
-            </small>
           </p>
         )}
         <input

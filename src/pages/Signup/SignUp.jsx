@@ -1,18 +1,47 @@
+/* eslint-disable no-unused-vars */
 import { useForm } from "react-hook-form";
 import "./SignUp.css";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { gql, useMutation } from "@apollo/client";
+import { useEffect, useState } from "react";
+
+const SIGNUP = gql`
+  mutation Signup(
+  $name: String!
+  $email: String!
+  $password: String!
+  $bio: String
+) {
+  signup(name: $name, email: $email, password: $password, bio: $bio) {
+    userError
+    token
+  }
+}
+`
 
 const SignUp = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm();
+  const [userError, setUserError] = useState(null);
+  const { register, handleSubmit, formState: { errors } } = useForm();
+  const [signup, { data, loading, error }] = useMutation(SIGNUP);
+  console.log(data);
 
-  const onSubmit = (data) => {
-    console.log(data);
+  // if (loading) return <p>Loading...</p>;
+  // if (error) return <p>Error : {error.message}</p>;
+
+  const onSubmit = (formData) => {
+    signup({ variables: formData });
   };
+
+  useEffect(() => {
+    if (data && data.signup.token) {
+        console.log("token", data.signup.token)
+        localStorage.setItem("token", data.signup.token)
+    }
+    if (data && data.signup.userError) {
+        setUserError(data.signup.userError)
+    }
+}, [data]);
 
   return (
     <div className="signUp-card mx-auto mt-[4%] shadow-lg">
